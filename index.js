@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, SafeAreaView, TextInput, TouchableOpacity, Keyboard, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, SafeAreaView, TextInput, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import Ionicons from "@expo/vector-icons/Ionicons";
 
 export default function App() {
@@ -10,11 +10,16 @@ export default function App() {
   const [messageSorteio, setMessageSorteio] = useState("Adicione itens para sortear");
   const [textButton, setTextButton] = useState("Sortear");
 
-  
   function adicionarItem() {
     if (itemInput.trim() !== '') {
+      // Check if the item already exists in the array
+      if (items.includes(itemInput)) {
+        Alert.alert("Item já adicionado", "Este item já foi adicionado ao sorteio.");
+        setItemInput(''); // Clear input
+        return;
+      }
       setItems([...items, itemInput]);
-      setItemInput('');  
+      setItemInput('');
       setMessageSorteio("Itens adicionados! Agora, clique em Sortear.");
     }
   }
@@ -44,8 +49,9 @@ export default function App() {
           value={itemInput}
           onChangeText={setItemInput}
           placeholder="Exemplo: Nome João, Número 5, Símbolo @"
+          placeholderTextColor="#b0b0b0"
         />
-        
+
         <TouchableOpacity
           style={styles.button}
           onPress={adicionarItem}
@@ -54,7 +60,6 @@ export default function App() {
           <Text style={styles.text}>Adicionar Item</Text>
         </TouchableOpacity>
 
-        {}
         <View style={styles.itemsListContainer}>
           <Text style={styles.itemsListTitle}>Itens adicionados:</Text>
           <ScrollView style={styles.itemsList}>
@@ -86,18 +91,18 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#EDF2F3',
+    backgroundColor: '#333333', // Dark background color
   },
   titlecontainer: {
     alignItems: 'center',
     justifyContent: 'flex-end',
     height: 130,
-    backgroundColor: '#D90429',
+    backgroundColor: '#D90429', // Red theme accent
     borderBottomStartRadius: 25,
     borderBottomEndRadius: 25,
   },
   title: {
-    color: '#EDF2F4',
+    color: '#edf2f4', // Light text for contrast
     fontSize: 28,
     fontWeight: 'bold',
     marginBottom: 30,
@@ -106,12 +111,12 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 40,
     width: '100%',
-    backgroundColor: 'EDF2F4'
+    backgroundColor: '#333333', // Dark content area
   },
   subtitle: {
     textAlign: 'center',
     fontSize: 24,
-    color: '#D90429',
+    color: '#D90429', // Red theme accent
     fontWeight: 'bold',
     marginBottom: 40,
   },
@@ -122,6 +127,7 @@ const styles = StyleSheet.create({
     borderColor: '#D90429',
     borderBottomWidth: 1,
     marginBottom: 20,
+    color: '#edf2f4', // Light input text
   },
   button: {
     width: '100%',
@@ -129,7 +135,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#ef233c',
+    backgroundColor: '#ef233c', // Darker red button background
     borderRadius: 15,
     marginTop: 10,
     marginBottom: 10,
@@ -159,7 +165,7 @@ const styles = StyleSheet.create({
   itemsListContainer: {
     marginTop: 20,
     paddingVertical: 10,
-    backgroundColor: '#f1f1f1',
+    backgroundColor: '#444444', // Dark background for item list
     borderRadius: 10,
     width: '100%',
     marginBottom: 20,
@@ -170,16 +176,16 @@ const styles = StyleSheet.create({
   itemsListTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#D90429',
+    color: '#D90429', // Red theme accent
     textAlign: 'center',
     marginBottom: 10,
   },
   itemsList: {
-    maxHeight: 150, 
+    maxHeight: 150,
   },
   itemText: {
     fontSize: 18,
-    color: '#333',
+    color: '#edf2f4', // Light text for item list
     paddingVertical: 5,
   },
 });
