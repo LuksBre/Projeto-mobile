@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, SafeAreaView, TextInput, TouchableOpacity, Keyboard, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, SafeAreaView, TextInput, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import Ionicons from "@expo/vector-icons/Ionicons";
 
 export default function App() {
@@ -10,11 +10,15 @@ export default function App() {
   const [messageSorteio, setMessageSorteio] = useState("Adicione itens para sortear");
   const [textButton, setTextButton] = useState("Sortear");
 
-  
   function adicionarItem() {
     if (itemInput.trim() !== '') {
+      if (items.includes(itemInput)) {
+        Alert.alert("Item já adicionado", "Este item já foi adicionado ao sorteio.");
+        setItemInput('');
+        return;
+      }
       setItems([...items, itemInput]);
-      setItemInput('');  
+      setItemInput('');
       setMessageSorteio("Itens adicionados! Agora, clique em Sortear.");
     }
   }
@@ -31,6 +35,17 @@ export default function App() {
     }
   }
 
+  function removerItem(item) {
+    Alert.alert(
+      "Remover item",
+      `Você tem certeza que deseja remover "${item}"?`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        { text: "Remover", onPress: () => setItems(items.filter(i => i !== item)) }
+      ]
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.titlecontainer}>
@@ -44,22 +59,27 @@ export default function App() {
           value={itemInput}
           onChangeText={setItemInput}
           placeholder="Exemplo: Nome João, Número 5, Símbolo @"
+          placeholderTextColor="#bbb"
         />
-        
+
         <TouchableOpacity
           style={styles.button}
           onPress={adicionarItem}
         >
-          <Ionicons name="add-circle-outline" size={24} color="#edf2f4" />
-          <Text style={styles.text}>Adicionar Item</Text>
+          <Ionicons name="add-circle-outline" size={24} color="#fff" />
+          <Text style={styles.text}>Adicionar</Text>
         </TouchableOpacity>
 
-        {}
         <View style={styles.itemsListContainer}>
           <Text style={styles.itemsListTitle}>Itens adicionados:</Text>
           <ScrollView style={styles.itemsList}>
             {items.map((item, index) => (
-              <Text key={index} style={styles.itemText}>{item}</Text>
+              <View key={index} style={styles.itemContainer}>
+                <Text style={styles.itemText}>{item}</Text>
+                <TouchableOpacity onPress={() => removerItem(item)}>
+                  <Ionicons name="trash-bin-outline" size={20} color="#bbb" />
+                </TouchableOpacity>
+              </View>
             ))}
           </ScrollView>
         </View>
@@ -68,7 +88,7 @@ export default function App() {
           style={styles.button}
           onPress={sortearItem}
         >
-          <Ionicons name="shuffle-sharp" size={24} color="#edf2f4" />
+          <Ionicons name="shuffle-sharp" size={24} color="#fff" />
           <Text style={styles.text}>{textButton}</Text>
         </TouchableOpacity>
 
@@ -78,7 +98,7 @@ export default function App() {
         </View>
 
       </View>
-      <StatusBar style='light' />
+      <StatusBar style='dark' />
     </SafeAreaView>
   );
 }
@@ -86,59 +106,55 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#EDF2F3',
+    backgroundColor: '#1a1a1a', 
   },
   titlecontainer: {
     alignItems: 'center',
-    justifyContent: 'flex-end',
-    height: 130,
-    backgroundColor: '#D90429',
-    borderBottomStartRadius: 25,
-    borderBottomEndRadius: 25,
+    justifyContent: 'center',
+    height: 90
+    ,
+    backgroundColor: '#333333', 
   },
   title: {
-    color: '#EDF2F4',
-    fontSize: 28,
+    color: '#fff', 
+    fontSize: 26,
     fontWeight: 'bold',
-    marginBottom: 30,
   },
   content: {
     flex: 1,
-    padding: 40,
-    width: '100%',
-    backgroundColor: 'EDF2F4'
+    padding: 20,
+    backgroundColor: '#1a1a1a', 
   },
   subtitle: {
     textAlign: 'center',
-    fontSize: 24,
-    color: '#D90429',
-    fontWeight: 'bold',
-    marginBottom: 40,
+    fontSize: 22,
+    color: '#ccc', 
+    marginBottom: 20,
   },
   input: {
-    height: 45,
+    height: 40,
     width: '100%',
-    fontSize: 18,
-    borderColor: '#D90429',
+    fontSize: 16,
+    borderColor: '#444',
     borderBottomWidth: 1,
     marginBottom: 20,
+    color: '#fff', 
   },
   button: {
     width: '100%',
-    paddingVertical: 15,
+    paddingVertical: 12,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#ef233c',
-    borderRadius: 15,
+    backgroundColor: '#444', 
+    borderRadius: 25,
     marginTop: 10,
     marginBottom: 10,
   },
   text: {
-    color: '#edf2f4',
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginLeft: 5,
+    color: '#fff',
+    fontSize: 18,
+    marginLeft: 10,
   },
   resultContainer: {
     flex: 1,
@@ -147,39 +163,42 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   resultText: {
-    fontSize: 18,
-    color: '#ef233c',
-    fontWeight: 'bold',
+    fontSize: 16,
+    color: '#bbb', 
+    fontWeight: 'normal',
   },
   result: {
-    fontSize: 48,
-    color: '#ef233c',
+    fontSize: 36,
+    color: '#D90429', 
     fontWeight: 'bold',
   },
   itemsListContainer: {
     marginTop: 20,
     paddingVertical: 10,
-    backgroundColor: '#f1f1f1',
+    backgroundColor: '#333', 
     borderRadius: 10,
     width: '100%',
     marginBottom: 20,
-    paddingHorizontal: 15,
-    borderWidth: 1,
-    borderColor: '#D90429',
   },
   itemsListTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#D90429',
+    fontSize: 16,
+    color: '#ccc', 
     textAlign: 'center',
     marginBottom: 10,
   },
   itemsList: {
-    maxHeight: 150, 
+    maxHeight: 150,
   },
   itemText: {
-    fontSize: 18,
-    color: '#333',
-    paddingVertical: 5,
+    fontSize: 16,
+    color: '#fff', 
+    paddingVertical: 8,
+  },
+  itemContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+    paddingHorizontal: 10,
   },
 });
