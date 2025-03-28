@@ -1,0 +1,90 @@
+Para transformar um projeto **Expo React Native** em um **APK**, você precisa usar o **EAS Build** (Expo Application Services). O Expo simplifica o processo de build de aplicativos, mas para gerar APKs, a melhor abordagem atualmente é utilizando o **EAS Build**, que é uma ferramenta do Expo para gerar builds de aplicativos para Android e iOS. 
+
+Aqui estão os passos detalhados para gerar um APK de um projeto Expo React Native:
+
+### Passo 1: Instalar o Expo CLI e o EAS CLI
+
+Primeiro, se você ainda não tem o **Expo CLI** e o **EAS CLI** instalados, instale-os globalmente:
+
+1. **Instale o Expo CLI:**
+
+```bash
+npm install -g expo-cli
+```
+
+2. **Instale o EAS CLI:**
+
+```bash
+npm install -g eas-cli
+```
+
+### Passo 2: Criar ou configurar seu projeto Expo
+
+Se você ainda não tem um projeto, pode criar um novo com o Expo:
+
+```bash
+expo init meu-projeto
+cd meu-projeto
+```
+
+Caso já tenha um projeto, entre na pasta do seu projeto existente.
+
+### Passo 3: Configurar o EAS Build
+
+Para usar o EAS Build, você precisa configurar o projeto. Para isso, execute o seguinte comando para criar o arquivo de configuração `eas.json`:
+
+```bash
+eas build:configure
+```
+
+Isso criará o arquivo `eas.json`, que armazena as configurações necessárias para o processo de build. Se o seu projeto já estiver configurado para Android, você pode pular esse passo.
+
+### Passo 4: Logar no Expo
+
+Você precisa estar logado na sua conta do Expo para poder gerar a build. Execute o comando abaixo e faça login:
+
+```bash
+expo login
+```
+
+### Passo 5: Criar a build para Android
+
+Agora, você está pronto para criar a build para Android. Para isso, execute o comando:
+
+```bash
+eas build --platform android
+```
+
+Esse comando pedirá ao Expo para construir uma versão do seu app para Android. O processo de build pode levar algum tempo, e o Expo irá gerar um APK (ou AAB) para você.
+
+### Passo 6: Acompanhar o progresso
+
+Você pode acompanhar o progresso da build no terminal. O Expo também fornecerá um link onde você pode monitorar a status da build:
+
+```bash
+https://expo.dev/accounts/seu-usuario/projects/meu-projeto/builds
+```
+
+### Passo 7: Baixar o APK
+
+Quando a build for concluída, você receberá um link para baixar o APK gerado. O link será exibido no terminal ou estará disponível no painel do Expo:
+
+- Caso tenha sido gerado um APK diretamente (em vez de AAB), você pode baixar o arquivo APK.
+- Caso tenha sido gerado um **Android App Bundle (AAB)**, esse arquivo é geralmente utilizado para publicação na **Google Play Store**, mas também pode ser convertido para APK, se necessário.
+
+### Passo 8: Testar o APK
+
+Baixe o APK no seu dispositivo Android e instale-o para testar o aplicativo. Você pode transferir o APK para o seu dispositivo e abrir para instalar. Caso o seu dispositivo não permita instalações de fontes desconhecidas, você precisará habilitar essa opção nas configurações.
+
+---
+
+### Resumo do Processo
+
+1. **Instalar o Expo CLI** e **EAS CLI**: `npm install -g expo-cli eas-cli`
+2. **Configurar o projeto**: `eas build:configure`
+3. **Logar no Expo**: `expo login`
+4. **Criar a build**: `eas build --platform android`
+5. **Acompanhar o progresso e obter o link de download**.
+6. **Baixar e testar o APK**.
+
+Se precisar de mais alguma ajuda, ou se algum passo não funcionar como esperado, me avise!
