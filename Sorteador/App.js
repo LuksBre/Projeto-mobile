@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, SafeAreaView, TextInput, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { StyleSheet, Text, View, SafeAreaView, TextInput, TouchableOpacity, ScrollView, Alert, Platform } from 'react-native';
 import Ionicons from "@expo/vector-icons/Ionicons";
 
 export default function App() {
@@ -42,6 +42,23 @@ export default function App() {
       [
         { text: "Cancelar", style: "cancel" },
         { text: "Remover", onPress: () => setItems(items.filter(i => i !== item)) }
+      ]
+    );
+  }
+
+  function limparTudo() {
+    Alert.alert(
+      "Limpar tudo",
+      "Você tem certeza que deseja limpar todos os itens?",
+      [
+        { text: "Cancelar", style: "cancel" },
+        { text: "Limpar", onPress: () => {
+            setItems([]);
+            setSorteio(null);
+            setMessageSorteio("Adicione itens para sortear");
+            setTextButton("Sortear");
+          }
+        }
       ]
     );
   }
@@ -92,13 +109,20 @@ export default function App() {
           <Text style={styles.text}>{textButton}</Text>
         </TouchableOpacity>
 
+        <TouchableOpacity
+          style={styles.clearButton}
+          onPress={limparTudo}
+        >
+          <Ionicons name="trash-outline" size={24} color="#fff" />
+          <Text style={styles.clearText}>Limpar Tudo</Text>
+        </TouchableOpacity>
+
         <View style={styles.resultContainer}>
           <Text style={styles.resultText}>{messageSorteio}</Text>
           <Text style={styles.result}>{sorteio}</Text>
         </View>
-
       </View>
-      <StatusBar style='dark' />
+      <StatusBar style="light" />
     </SafeAreaView>
   );
 }
@@ -106,29 +130,30 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a1a', 
+    backgroundColor: '#1a1a1a',
   },
   titlecontainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    height: 90
-    ,
-    backgroundColor: '#333333', 
+    height: 100,
+    backgroundColor: '#333333',
+    paddingTop: Platform.OS === 'ios' ? 30 : StatusBar.currentHeight, 
   },
   title: {
-    color: '#fff', 
-    fontSize: 26,
+    color: '#fff',
+    fontSize: 30,
     fontWeight: 'bold',
   },
   content: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#1a1a1a', 
+    backgroundColor: '#1a1a1a',
+    marginTop: 40, 
   },
   subtitle: {
     textAlign: 'center',
     fontSize: 22,
-    color: '#ccc', 
+    color: '#ccc',
     marginBottom: 20,
   },
   input: {
@@ -138,7 +163,7 @@ const styles = StyleSheet.create({
     borderColor: '#444',
     borderBottomWidth: 1,
     marginBottom: 20,
-    color: '#fff', 
+    color: '#fff',
   },
   button: {
     width: '100%',
@@ -146,12 +171,28 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#444', 
+    backgroundColor: '#444',
     borderRadius: 25,
     marginTop: 10,
     marginBottom: 10,
   },
   text: {
+    color: '#fff',
+    fontSize: 18,
+    marginLeft: 10,
+  },
+  clearButton: {
+    width: '100%',
+    paddingVertical: 12,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#D90429',
+    borderRadius: 25,
+    marginTop: 10,
+    marginBottom: 10,
+  },
+  clearText: {
     color: '#fff',
     fontSize: 18,
     marginLeft: 10,
@@ -164,25 +205,25 @@ const styles = StyleSheet.create({
   },
   resultText: {
     fontSize: 16,
-    color: '#bbb', 
+    color: '#bbb',
     fontWeight: 'normal',
   },
   result: {
     fontSize: 36,
-    color: '#D90429', 
+    color: '#D90429',
     fontWeight: 'bold',
   },
   itemsListContainer: {
     marginTop: 20,
     paddingVertical: 10,
-    backgroundColor: '#333', 
+    backgroundColor: '#333',
     borderRadius: 10,
     width: '100%',
     marginBottom: 20,
   },
   itemsListTitle: {
     fontSize: 16,
-    color: '#ccc', 
+    color: '#ccc',
     textAlign: 'center',
     marginBottom: 10,
   },
@@ -191,7 +232,7 @@ const styles = StyleSheet.create({
   },
   itemText: {
     fontSize: 16,
-    color: '#fff', 
+    color: '#fff',
     paddingVertical: 8,
   },
   itemContainer: {
