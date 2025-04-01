@@ -1,7 +1,22 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, SafeAreaView, TextInput, TouchableOpacity, ScrollView, Alert, Platform } from 'react-native';
+import { 
+  StyleSheet, 
+  Text, 
+  View, 
+  SafeAreaView, 
+  TextInput, 
+  TouchableOpacity, 
+  ScrollView, 
+  Alert, 
+  Platform,
+  Vibration,
+  Appearance,
+  useColorScheme
+} from 'react-native';
 import Ionicons from "@expo/vector-icons/Ionicons";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Audio } from 'expo-av';
 
 export default function App() {
   const [itemInput, setItemInput] = useState('');
@@ -9,237 +24,343 @@ export default function App() {
   const [sorteio, setSorteio] = useState(null);
   const [messageSorteio, setMessageSorteio] = useState("Adicione itens para sortear");
   const [textButton, setTextButton] = useState("Sortear");
+  const [sound, setSound] = useState();
+  const systemColorScheme = useColorScheme();
+  const [manualTheme, setManualTheme] = useState(null);
+  const colorScheme = manualTheme || systemColorScheme;
 
-  function adicionarItem() {
-    if (itemInput.trim() !== '') {
-      if (items.includes(itemInput)) {
-        Alert.alert("Item já adicionado", "Este item já foi adicionado ao sorteio.");
-        setItemInput('');
-        return;
+  
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [savedItems, savedTheme] = await Promise.all([
+          AsyncStorage.getItem('@sorteio_items'),
+          AsyncStorage.getItem('@sorteio_theme')
+        ]);
+        
+        if (savedItems) {
+          setItems(JSON.parse(savedItems));
+          if (JSON.parse(savedItems).length > 0) {
+            setMessageSorteio("Itens carregados! Clique em Sortear.");
+          }
+        }
+        
+        if (savedTheme) setManualTheme(savedTheme);
+        
+        
+        const { sound } = await Audio.Sound.createAsync(require('./assets/success.mp3'));
+        setSound(sound);
+      } catch (e) {
+        console.error('Erro ao carregar dados:', e);
       }
-      setItems([...items, itemInput]);
-      setItemInput('');
-      setMessageSorteio("Itens adicionados! Agora, clique em Sortear.");
-    }
-  }
+    };
+    
+    loadData();
+    
+    return () => {
+      if (sound) sound.unloadAsync();
+    };
+  }, []);
 
-  function sortearItem() {
-    if (items.length > 0) {
-      const itemAleatorio = items[Math.floor(Math.random() * items.length)];
-      setSorteio(itemAleatorio);
-      setTextButton("Sortear Novamente");
-    } else {
-      setSorteio(null);
+  
+  const toggleTheme = () => {
+    const newTheme = colorScheme === 'dark' ? 'light' : 'dark';
+    setManualTheme(newTheme);
+    AsyncStorage.setItem('@sorteio_theme', newTheme);
+    Vibration.vibrate(50);
+  };
+
+  const adicionarItem = () => {
+    if (!itemInput.trim()) return;
+    
+    if (items.includes(itemInput)) {
+      Alert.alert("Item já existe", "Este item já foi adicionado.");
+      return;
+    }
+    
+    const newItems = [...items, itemInput];
+    setItems(newItems);
+    AsyncStorage.setItem('@sorteio_items', JSON.stringify(newItems));
+    setItemInput('');
+    setMessageSorteio("Itens adicionados! Clique em Sortear.");
+    Vibration.vibrate(50);
+  };
+
+  const sortearItem = async () => {
+    if (items.length === 0) {
       setMessageSorteio("Adicione itens antes de sortear");
-      setTextButton("Sortear");
+      Vibration.vibrate(200);
+      return;
     }
-  }
+    
+    const itemAleatorio = items[Math.floor(Math.random() * items.length)];
+    setSorteio(itemAleatorio);
+    setTextButton("Sortear Novamente");
+    
+    Vibration.vibrate([100, 50, 100]);
+    try {
+      await sound?.replayAsync();
+    } catch (error) {
+      console.log('Erro ao reproduzir som:', error);
+    }
+  };
 
-  function removerItem(item) {
+  const removerItem = (item) => {
     Alert.alert(
       "Remover item",
-      `Você tem certeza que deseja remover "${item}"?`,
+      `Remover "${item}" da lista?`,
       [
         { text: "Cancelar", style: "cancel" },
-        { text: "Remover", onPress: () => setItems(items.filter(i => i !== item)) }
-      ]
-    );
-  }
-
-  function limparTudo() {
-    Alert.alert(
-      "Limpar tudo",
-      "Você tem certeza que deseja limpar todos os itens?",
-      [
-        { text: "Cancelar", style: "cancel" },
-        { text: "Limpar", onPress: () => {
-            setItems([]);
-            setSorteio(null);
-            setMessageSorteio("Adicione itens para sortear");
-            setTextButton("Sortear");
+        { 
+          text: "Remover", 
+          onPress: () => {
+            const newItems = items.filter(i => i !== item);
+            setItems(newItems);
+            AsyncStorage.setItem('@sorteio_items', JSON.stringify(newItems));
+            Vibration.vibrate(10);
           }
         }
       ]
     );
-  }
+  };
+
+  const limparTudo = () => {
+    Alert.alert(
+      "Limpar tudo",
+      "Tem certeza que deseja limpar todos os itens?",
+      [
+        { text: "Cancelar", style: "cancel" },
+        { 
+          text: "Limpar", 
+          onPress: () => {
+            setItems([]);
+            setSorteio(null);
+            setMessageSorteio("Adicione itens para sortear");
+            setTextButton("Sortear");
+            AsyncStorage.setItem('@sorteio_items', JSON.stringify([]));
+            Vibration.vibrate(100);
+          }
+        }
+      ]
+    );
+  };
+
+  
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colorScheme === 'dark' ? '#121212' : '#f8f9fa',
+    },
+    
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: 24,
+      paddingTop: Platform.OS === 'ios' ? 60 : 40,  
+      backgroundColor: colorScheme === 'dark' ? '#1F1F1F' : '#6200EE',
+      borderBottomWidth: 1,
+      borderBottomColor: colorScheme === 'dark' ? '#333' : '#5E00D1',
+      elevation: 3,
+      paddingBottom: 20,  
+    },
+    headerTitle: {
+      color: '#FFF',
+      fontSize: 35,
+      fontWeight: '700',
+    },
+    themeButton: {
+      padding: 10,
+      borderRadius: 10,
+      backgroundColor: colorScheme === 'dark' ? '#333' : '#7C4DFF',
+    },
+    content: {
+      flex: 1,
+      padding: 24,
+      paddingTop: 60,  
+    },
+    inputContainer: {
+      marginBottom: 20,
+    },
+    input: {
+      height: 50,
+      backgroundColor: colorScheme === 'dark' ? '#1F1F1F' : '#FFF',
+      borderWidth: 1,
+      borderColor: colorScheme === 'dark' ? '#333' : '#E0E0E0',
+      borderRadius: 12,
+      padding: 14,
+      fontSize: 16,
+      color: colorScheme === 'dark' ? '#FFF' : '#333',
+      elevation: 1,
+    },
+    button: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 16,
+      borderRadius: 12,
+      backgroundColor: colorScheme === 'dark' ? '#333' : '#6200EE',
+      marginVertical: 8,
+      elevation: 2,
+    },
+    buttonText: {
+      color: '#FFF',
+      fontSize: 16,
+      fontWeight: '600',
+      marginLeft: 10,
+    },
+    clearButton: {
+      backgroundColor: '#D32F2F',
+    },
+    drawButton: {
+      backgroundColor: '#388E3C',
+    },
+    listContainer: {
+      backgroundColor: colorScheme === 'dark' ? '#1F1F1F' : '#FFF',
+      borderRadius: 12,
+      padding: 16,
+      marginBottom: 16,
+      elevation: 2,
+    },
+    listTitle: {
+      color: colorScheme === 'dark' ? '#AAA' : '#666',
+      fontSize: 16,
+      fontWeight: '600',
+      marginBottom: 12,
+    },
+    item: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: 12,
+      backgroundColor: colorScheme === 'dark' ? '#252525' : '#F5F5F5',
+      borderRadius: 8,
+      marginBottom: 8,
+    },
+    itemText: {
+      color: colorScheme === 'dark' ? '#FFF' : '#333',
+      fontSize: 16,
+    },
+    resultContainer: {
+      backgroundColor: colorScheme === 'dark' ? '#1F1F1F' : '#FFF',
+      borderRadius: 12,
+      padding: 24,
+      alignItems: 'center',
+      elevation: 2,
+    },
+    resultMessage: {
+      color: colorScheme === 'dark' ? '#AAA' : '#666',
+      fontSize: 16,
+      marginBottom: 8,
+      textAlign: 'center',
+    },
+    resultText: {
+      color: '#D32F2F',
+      fontSize: 32,
+      fontWeight: '700',
+      marginTop: 8,
+    },
+    emptyList: {
+      color: colorScheme === 'dark' ? '#666' : '#999',
+      textAlign: 'center',
+      fontStyle: 'italic',
+      padding: 16,
+    },
+  });
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.titlecontainer}>
-        <Text style={styles.title}>Gallo's Sorteador</Text>
-      </View>
-      <View style={styles.content}>
-        <Text style={styles.subtitle}>Adicione itens para sorteio</Text>
-
-        <TextInput
-          style={styles.input}
-          value={itemInput}
-          onChangeText={setItemInput}
-          placeholder="Exemplo: Nome João, Número 5, Símbolo @"
-          placeholderTextColor="#bbb"
-        />
-
-        <TouchableOpacity
-          style={styles.button}
-          onPress={adicionarItem}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Gallo's Sorteador</Text>
+        <TouchableOpacity 
+          style={styles.themeButton} 
+          onPress={toggleTheme}
+          activeOpacity={0.7}
         >
-          <Ionicons name="add-circle-outline" size={24} color="#fff" />
-          <Text style={styles.text}>Adicionar</Text>
+          <Ionicons 
+            name={colorScheme === 'dark' ? 'sunny' : 'moon'} 
+            size={20} 
+            color="#FFF" 
+          />
         </TouchableOpacity>
+      </View>
 
-        <View style={styles.itemsListContainer}>
-          <Text style={styles.itemsListTitle}>Itens adicionados:</Text>
-          <ScrollView style={styles.itemsList}>
-            {items.map((item, index) => (
-              <View key={index} style={styles.itemContainer}>
-                <Text style={styles.itemText}>{item}</Text>
-                <TouchableOpacity onPress={() => removerItem(item)}>
-                  <Ionicons name="trash-bin-outline" size={20} color="#bbb" />
-                </TouchableOpacity>
-              </View>
-            ))}
+      <View style={styles.content}>
+        <View style={styles.inputContainer}>
+          <TextInput
+            style={styles.input}
+            value={itemInput}
+            onChangeText={setItemInput}
+            placeholder="Digite um item..."
+            placeholderTextColor={colorScheme === 'dark' ? '#666' : '#999'}
+            onSubmitEditing={adicionarItem}
+          />
+          
+          <TouchableOpacity 
+            style={styles.button} 
+            onPress={adicionarItem}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="add" size={20} color="#FFF" />
+            <Text style={styles.buttonText}>Adicionar Item</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.listContainer}>
+          <Text style={styles.listTitle}>
+            Itens para Sorteio ({items.length})
+          </Text>
+          
+          <ScrollView style={{ maxHeight: 150 }}>
+            {items.length > 0 ? (
+              items.map((item, index) => (
+                <View key={index} style={styles.item}>
+                  <Text style={styles.itemText}>{item}</Text>
+                  <TouchableOpacity 
+                    onPress={() => removerItem(item)}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons 
+                      name="trash" 
+                      size={18} 
+                      color={colorScheme === 'dark' ? '#AAA' : '#888'} 
+                    />
+                  </TouchableOpacity>
+                </View>
+              ))
+            ) : (
+              <Text style={styles.emptyList}>Nenhum item adicionado</Text>
+            )}
           </ScrollView>
         </View>
 
-        <TouchableOpacity
-          style={styles.button}
+        <TouchableOpacity 
+          style={[styles.button, styles.drawButton]}
           onPress={sortearItem}
+          activeOpacity={0.7}
         >
-          <Ionicons name="shuffle-sharp" size={24} color="#fff" />
-          <Text style={styles.text}>{textButton}</Text>
+          <Ionicons name="shuffle" size={20} color="#FFF" />
+          <Text style={styles.buttonText}>{textButton}</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.clearButton}
-          onPress={limparTudo}
-        >
-          <Ionicons name="trash-outline" size={24} color="#fff" />
-          <Text style={styles.clearText}>Limpar Tudo</Text>
-        </TouchableOpacity>
+        {items.length > 0 && (
+          <TouchableOpacity 
+            style={[styles.button, styles.clearButton]}
+            onPress={limparTudo}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="trash" size={20} color="#FFF" />
+            <Text style={styles.buttonText}>Limpar Todos</Text>
+          </TouchableOpacity>
+        )}
 
         <View style={styles.resultContainer}>
-          <Text style={styles.resultText}>{messageSorteio}</Text>
-          <Text style={styles.result}>{sorteio}</Text>
+          <Text style={styles.resultMessage}>{messageSorteio}</Text>
+          {sorteio && <Text style={styles.resultText}>{sorteio}</Text>}
         </View>
       </View>
-      <StatusBar style="light" />
+      
+      <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#1a1a1a',
-  },
-  titlecontainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 100,
-    backgroundColor: '#333333',
-    paddingTop: Platform.OS === 'ios' ? 30 : StatusBar.currentHeight, 
-  },
-  title: {
-    color: '#fff',
-    fontSize: 30,
-    fontWeight: 'bold',
-  },
-  content: {
-    flex: 1,
-    padding: 20,
-    backgroundColor: '#1a1a1a',
-    marginTop: 40, 
-  },
-  subtitle: {
-    textAlign: 'center',
-    fontSize: 22,
-    color: '#ccc',
-    marginBottom: 20,
-  },
-  input: {
-    height: 40,
-    width: '100%',
-    fontSize: 16,
-    borderColor: '#444',
-    borderBottomWidth: 1,
-    marginBottom: 20,
-    color: '#fff',
-  },
-  button: {
-    width: '100%',
-    paddingVertical: 12,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#444',
-    borderRadius: 25,
-    marginTop: 10,
-    marginBottom: 10,
-  },
-  text: {
-    color: '#fff',
-    fontSize: 18,
-    marginLeft: 10,
-  },
-  clearButton: {
-    width: '100%',
-    paddingVertical: 12,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#D90429',
-    borderRadius: 25,
-    marginTop: 10,
-    marginBottom: 10,
-  },
-  clearText: {
-    color: '#fff',
-    fontSize: 18,
-    marginLeft: 10,
-  },
-  resultContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
-  },
-  resultText: {
-    fontSize: 16,
-    color: '#bbb',
-    fontWeight: 'normal',
-  },
-  result: {
-    fontSize: 36,
-    color: '#D90429',
-    fontWeight: 'bold',
-  },
-  itemsListContainer: {
-    marginTop: 20,
-    paddingVertical: 10,
-    backgroundColor: '#333',
-    borderRadius: 10,
-    width: '100%',
-    marginBottom: 20,
-  },
-  itemsListTitle: {
-    fontSize: 16,
-    color: '#ccc',
-    textAlign: 'center',
-    marginBottom: 10,
-  },
-  itemsList: {
-    maxHeight: 150,
-  },
-  itemText: {
-    fontSize: 16,
-    color: '#fff',
-    paddingVertical: 8,
-  },
-  itemContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-    paddingHorizontal: 10,
-  },
-});
